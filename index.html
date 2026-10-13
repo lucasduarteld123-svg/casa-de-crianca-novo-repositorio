@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 Gestão de Estoque | Casa de Criança</title>
+    <link rel="manifest" href='data:application/json,{"name":"Gestão de Estoque - Casa de Criança","short_name":"Estoque","display":"standalone","background_color":"#f2f4f0","theme_color":"#0f8a7e"}'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>(function(){ emailjs.init("tSwS8CRZ7imq5OsaM"); })();</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+        <div class="login-icon">📦</div>
+        <h2 class="login-title">Gestão de Estoque</h2>
+        <p class="login-subtitle">Casa de Criança</p>
+        
+        <!-- Login desativado para uso futuro
+        <form id="loginForm">
+            <div class="form-group">
+                <label>E-mail Corporativo</label>
+                <input type="email" id="loginEmail" placeholder="seu.email@empresa.com" required>
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="btnLogin">Entrar no Sistema</button>
+        </form>
+        <p id="loginError" class="login-error-message"></p>
+        -->
+
+        <button type="button" class="btn btn-primary btn-full" id="btnAcessoRapido">Entrar no Sistema</button>
+    </div>
+</div>
+
+<div id="appContainer" style="display: none;">
+
+<button class="hamburger" id="hamburgerBtn"  aria-label="Menu">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay" ></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">📦</div>
+            <h2>Gestão de<br>Estoque</h2>
+        </div>
+        <div class="sidebar-subtitle">Casa de Criança</div>
+    </div>
+
+    <nav class="menu-container">
+        <div class="menu-section-label">Operações</div>
+        <button class="menu-btn active" data-section="registro_triagem">
+            <span class="menu-icon">📝</span> Entrada &amp; Triagem
+        </button>
+        <button class="menu-btn" data-section="visao_geral">
+            <span class="menu-icon">📊</span> Visão Geral
+            <span class="menu-badge" id="badgeEstoque">0</span>
+        </button>
+        <button class="menu-btn" data-section="destino">
+            <span class="menu-icon">✅</span> Destino Final
+        </button>
+
+        <div class="menu-section-label">Auditoria</div>
+        <button class="menu-btn" data-section="status_triagem">
+            <span class="menu-icon">🔍</span> Histórico Triagens
+        </button>
+    </nav>
+
+    <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="connectionStatusText">Conectando...</span>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="page-header">
+        <div class="page-header-top">
+            <div>
+                <h1>📦 Gestão de <span>Estoque | Casa de Criança</span></h1>
+            </div>
+                        <div class="header-actions">
+                <button class="btn btn-ghost btn-sm" id="btnConfig" title="Configurações do Sistema">⚙️</button>
+                <button class="btn btn-ghost btn-sm" id="btnLogout" title="Sair do sistema">🚪 Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-body">
+        
+        <div id="registro_triagem" class="section active">
+            <h2 class="section-title" id="registroFormTitulo">📝 Nova Entrada com Triagem Integrada</h2>
+            <p class="section-subtitle">Insira os dados logísticos do material e responda ao formulário de destinação simultaneamente.</p>
+
+            <form id="formUnificado" class="form-grid">
+                <div class="form-block" id="blocoItens" style="grid-column: span 2;">
+                    <h3>🛒 1. Inserção de Itens (Lote)</h3>
+                    
+                    <div class="form-grid" id="formAdicionarItem" style="margin-bottom: 20px;">
+                        <div>
+                            <label>Nome do Produto / Descrição *</label>
+                            <input type="text" id="nomeTemp" placeholder="Ex: Armários, Monitores">
+                        </div>
+                        <div>
+                            <label>Quantidade *</label>
+                            <input type="number" id="quantidadeTemp" min="1" value="1">
+                        </div>
+                        <div>
+                            <label>Unidade de Medida *</label>
+                            <select id="unidadeMedidaTemp">
+                                <option value="">-- Selecione --</option>
+                                <option value="Unidades">Unidades (un)</option>
+                                <option value="Quilos">Quilos (kg)</option>
+                                <option value="Litros">Litros (L)</option>
+                                <option value="Caixas">Caixas (cx)</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:flex-end; margin-bottom:14px;">
+                            <button type="button" class="btn btn-ghost btn-full" id="btnAdicionarItemTemp">➕ Adicionar à Lista</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper" style="margin-bottom: 15px;">
+                        <!-- Template para a linha de item temporário -->
+                        <template id="templateItemTemp">
+                            <tr>
+                                <td data-label="Produto"><strong></strong></td>
+                                <td data-label="Qtd."></td>
+                                <td data-label="Un. Medida"></td>
+                                <td data-label="Ação"><button type="button" class="btn btn-ghost btn-sm btn-remover-temp">❌</button></td>
+                            </tr>
+                        </template>
+
+                        <table>
+                            <thead><tr><th>Produto</th><th>Qtd.</th><th>Un. Medida</th><th>Ação</th></tr></thead>
+                            <tbody id="tbodyItensTemp">
+                                <tr><td colspan="4" class="table-empty" style="padding: 15px; font-size: 0.85rem;">Nenhum item adicionado ao lote.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary btn-full" id="btnConfirmarItensTemp">✅ Confirmar Itens e Continuar</button>
+                    <button type="button" class="btn btn-ghost btn-full" id="btnEditarItensTemp" style="display:none;">✏️ Adicionar/Remover mais itens</button>
+                </div>
+
+                <div class="form-block secao-etapa-2" style="display: none;">
+                    <h3>📦 2. Informações Logísticas</h3>
+
+                    <label>Data de Entrada *</label>
+                    <input type="date" id="dataEntrada">
+
+                    <label>Unidade de Origem *</label>
+                    <select id="unidade">
+                        <option value="">-- Selecione --</option>
+                        <option value="Unidade 1">Unidade 1</option>
+                        <option value="Unidade 2">Unidade 2</option>
+                    </select>
+
+                    <label>Remetente do Envio *</label>
+                    <input type="text" id="remetente" placeholder="Quem despachou o material">
+
+                    <label>E-mail para Notificações &amp; Alertas *</label>
+                    <input type="email" id="emailNotificacao" placeholder="exemplo@empresa.com">
+
+                    <label>Motivo do Envio *</label>
+                    <textarea id="motivo" placeholder="Descreva a justificativa da retenção provisória"></textarea>
+                </div>
+
+                <div class="form-block secao-etapa-2" style="display: none;">
+                    <h3>📋 3. Questionário de Triagem</h3>
+                    <div class="quiz-container">
+
+                        <div class="quiz-row">
+                            <div class="quiz-question">1. É algum produto mobiliado? *</div>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="p_mobiliado" value="Sim" class="radio-input" >
+                                    <div class="radio-tile">🪑 Sim</div>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="p_mobiliado" value="Não" class="radio-input" >
+                                    <div class="radio-tile">🛠️ Não</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="quiz-row">
+                            <div class="quiz-question">2. Será para doação? *</div>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="p_doacao" value="Sim" class="radio-input" >
+                                    <div class="radio-tile">🤝 Sim</div>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="p_doacao" value="Não" class="radio-input" >
+                                    <div class="radio-tile">❌ Não</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="quiz-row">
+                            <div class="quiz-question">3. Será para descarte? *</div>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="p_descarte" value="Sim" class="radio-input" >
+                                    <div class="radio-tile">🗑️ Sim</div>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="p_descarte" value="Não" class="radio-input" >
+                                    <div class="radio-tile">❌ Não</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="quiz-row" style="border-left: 3px solid var(--primary);">
+                            <div class="quiz-question" style="color: var(--primary);">✍️ Assinatura do Responsável Técnico *</div>
+                            <input type="text" id="assinaturaUsuario" placeholder="Nome completo do validador" style="margin-bottom:0;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="secao-etapa-2" style="grid-column: span 2; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 28px; display: none;">
+                    <h2 class="section-title">⏰ Definição e Controle de Prazos</h2>
+                    <p class="section-subtitle">Selecione o prazo de permanência do material no estoque. Este valor definirá a data limite e é obrigatório.</p>
+    
+                    <div style="display:flex; gap:12px; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap;">
+                        <div>
+                            <label>Prazo de Permanência em Estoque *</label>
+                            <select id="selectMesesLembrete"  style="width:280px; margin-bottom:0;">
+                                <option value="" selected>-- Selecione o prazo --</option>
+                                <option value="60">2 meses (60 dias)</option>
+                                <option value="120">4 meses (120 dias)</option>
+                                <option value="180">6 meses (180 dias)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tabelaLembretesContainer"></div>
+                </div>
+
+                <div id="registroBtnContainer" class="secao-etapa-2" style="grid-column: span 2; display: none; gap: 10px;">
+                    <button type="submit" class="btn btn-primary btn-lg" id="btnSalvarRegistro" style="flex:1;">
+                        <span id="btnSalvarIcon">💾</span>
+                        <span id="btnSalvarText">Gravar Entrada e Triagem no Banco de Dados</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="visao_geral" class="section">
+            <h2 class="section-title">📊 Inventário Completo</h2>
+            <p class="section-subtitle">Painel consolidado de todos os materiais em estoque e finalizados.</p>
+
+            <div class="dash-container">
+                <div class="dash-card">
+                    <div class="dash-card-accent" style="background:var(--primary);"></div>
+                    <h4>Em Estoque</h4>
+                    <p id="dashEstoque">0</p>
+                    <div class="dash-trend">materiais ativos</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-accent" style="background:var(--success);"></div>
+                    <h4>Finalizados</h4>
+                    <p id="dashFinalizados">0</p>
+                    <div class="dash-trend">com destino aplicado</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-accent" style="background:var(--info);"></div>
+                    <h4>Total de Itens</h4>
+                    <p id="dashTotal">0</p>
+                    <div class="dash-trend">no banco de dados</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📅 Entradas por Mês</h3>
+                    <canvas id="chartEntradas"></canvas>
+                </div>
+            </div>
+
+            
+
+            <div class="table-wrapper">
+                <div class="table-toolbar">
+                    <div class="table-search">
+                        <span class="table-search-icon">🔍</span>
+                        <input type="search" id="buscaGeral" placeholder="Buscar por nome, remetente..." >
+                    </div>
+                    
+                    <select id="seletorItensPagina"  style="width:140px; margin-bottom:0;" title="Quantidade de espaços na tabela">
+                        <option value="10">10 espaços</option>
+                        <option value="20" selected>20 espaços</option>
+                        <option value="50">50 espaços</option>
+                        <option value="100">100 espaços</option>
+                    </select>
+
+                    <select id="filtroStatus"  style="width:150px; margin-bottom:0;">
+                        <option value="Todos">Todos</option>
+                        <option value="Em Estoque" selected>Em Estoque</option>
+                        <option value="Finalizado">Finalizado</option>
+                    </select>
+                    
+                    <button class="btn btn-ghost btn-sm" id="btnExportarPDF">📄 Exportar PDF</button>
+                </div>
+                <div id="tabelaGeralContainer" class="table-scroll">
+                    <!-- O conteúdo da tabela será renderizado aqui pelo JavaScript -->
+                    <div class="table-loading-state">
+                        <div class="spinner"></div>
+                        <p>Carregando inventário...</p>
+                    </div>
+                </div>
+
+                <!-- Template para a linha da tabela de inventário -->
+                <template id="templateLinhaEstoque">
+                    <tr>
+                        <td data-label="ID"><code></code></td>
+                        <td data-label="Nome"><strong></strong></td>
+                        <td data-label="Qtd."><span class="badge badge-muted"></span></td>
+                        <td data-label="Origem"></td>
+                        <td data-label="Entrada"></td>
+                        <td data-label="Término"></td>
+                        <td data-label="Status"></td>
+                        <td data-label="Ações" style="white-space:nowrap;"></td>
+                    </tr>
+                </template>
+                <div id="paginacaoGeral" class="pagination" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div id="destino" class="section">
+            <h2 class="section-title">✅ Definir Destino de Material</h2>
+            <p class="section-subtitle">Aplique o destino final para materiais em estoque e finalize o processo.</p>
+
+            <div id="alertaPVPSContainer"></div>
+
+            <div class="table-wrapper" style="margin-bottom:20px;">
+                <div class="table-toolbar">
+                    <span style="font-size:0.82rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">Fila de Materiais Pendentes</span>
+                </div>
+                <div id="tabelaDestinoContainer" class="table-scroll"></div>
+            </div>
+
+            <div class="form-block">
+                <h3>🎯 Aplicar Destino</h3>
+
+                <label>ID do Produto (Key ID)</label>
+                <input type="text" id="idProdutoDestino" placeholder="Selecione na tabela acima ou cole o código ID aqui">
+
+                <label>Escolha o destino:</label>
+                <select id="selectDestino">
+                    <option value="Doação">🤝 Doação</option>
+                    <option value="Descarte">🗑️ Descarte</option>
+                    <option value="Reutilizável">♻️ Reutilizável</option>
+                </select>
+
+                <div class="obs-block" style="margin-top:0; margin-bottom:14px; padding:14px;">
+                    <h4>Justificativa do Destino (opcional)</h4>
+                    <textarea id="justificativaDestino" placeholder="Descreva o motivo da destinação escolhida..." style="height:70px; margin-bottom:0;"></textarea>
+                </div>
+
+                <button class="btn btn-primary btn-full" id="btnAplicarDestino">✅ Confirmar Destino</button>
+            </div>
+        </div>
+
+        <div id="status_triagem" class="section">
+            <h2 class="section-title">🔍 Controle de Formulários de Triagem</h2>
+            <p class="section-subtitle">Logs de auditoria das triagens gravadas junto com as entradas técnicas correspondentes.</p>
+
+            <div style="margin-bottom:16px;">
+                <label>Filtrar por Situação:</label>
+                <select id="filtroTriagem"  style="width:250px; margin-bottom:0;">
+                    <option value="Todos">Todos os Formulários</option>
+                    <option value="Atendido" selected>Atendidos (Concluídos)</option>
+                </select>
+            </div>
+
+            <div id="tabelaTriagensContainer"></div>
+        </div>
+    </div>
+</div>
+
+</div> <!-- Fim do #appContainer -->
+
+<div class="toast-container" id="toastContainer"></div>
+<div id="modalContainer"></div>
+
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
